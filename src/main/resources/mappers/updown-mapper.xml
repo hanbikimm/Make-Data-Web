@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="heyoom.second.updown.mapper.UpdownMapper">
+	<select id="getDownLoadDatas" resultType="heyoom.second.updown.domain.DownloadData">
+		SELECT * FROM t_download
+	</select>
+	
+</mapper>

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" href="bootstrap.min.css" type="text/css">
+		<link rel="stylesheet" href="style.css" type="text/css">
+		
+	</head>
+	<body>
+		<div class="container text-center mt-4">
+		  <div class="row">
+		    <div class="col">
+		      <h3><strong><u>SYSTEM SETUP </u></strong></h3>
+		    </div>
+		    <div class="col">
+		      <h3><a class="move" href="/updown/log">실행 LOG</a><h3>
+		    </div>
+		  </div>
+		 </div>
+		
+		<div class="m-5">
+			<p class="h3"> ▷ 시스템 현재시간 <span th:text="${#calendars.format(#calendars.createNow(), 'HH:mm:ss')}"></span> </p>
+		</div>
+		
+		<div class="m-5 border border-3 border-danger">
+			<div class="m-2 mt-3">
+				- TEXT 파일 UPLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary">바로실행</button>
+			</div>
+			<div class="m-2">
+				- EXCEL 파일 UPLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary">바로실행</button>
+			</div>
+			<div class="m-2 mb-3">
+				- XML 파일 UPLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary">바로실행</button>
+			</div>
+		</div>
+		
+		<div class="m-5 border border-3 border-primary">
+			<div class="m-2 mt-3">
+				- TEXT 파일 DOWNLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary" th:onclick="|location.href='@{/updown/download/txt}'|">
+					바로실행
+				</button>
+			</div>
+			<div class="m-2">
+				- EXCEL 파일 DOWNLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary" th:onclick="|location.href='@{/updown/download/excel}'|">
+					바로실행
+				</button>
+			</div>
+			<div class="m-2 mb-3">
+				- XML 파일 DOWNLOAD 시간
+				<button class="btn btn-secondary">설정</button>
+				<button class="btn btn-secondary" th:onclick="|location.href='@{/updown/download/xml}'|">
+					바로실행
+				</button>
+			</div>
+		</div>
+	</body>
+</html>
