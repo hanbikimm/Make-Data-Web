@@ -13,12 +13,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
+
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 
 import heyoom.second.updown.domain.DownloadData;
 import heyoom.second.updown.mapper.UpdownMapper;
@@ -32,8 +43,8 @@ public class UpdownServiceImpl implements UpdownService {
 	
 	private final UpdownMapper updownMapper;
 	
-	@Value("${dir.path}")
-	private String path;
+	@Value("${download.path}")
+	private String downloadPath;
 	
 	private String writeSpace(String data, int byteLength) throws UnsupportedEncodingException {
 		int spaceLength = byteLength - data.getBytes("EUC-KR").length;
@@ -65,14 +76,14 @@ public class UpdownServiceImpl implements UpdownService {
 	public String makeTxt() throws IOException {
 		List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
 		
-		//현재 시간 파일이름 설정
+		//현재 날짜 파일이름 설정
         LocalDate now = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String formatedNow = now.format(formatter);
         String fileName = "D" + formatedNow + ".txt";
         
         //파일 생성
-        File file = new File(path + fileName);
+        File file = new File(downloadPath + fileName);
         if (!file.exists()) {
             file.createNewFile();
         }
@@ -127,7 +138,7 @@ public class UpdownServiceImpl implements UpdownService {
 
 	@Override
 	public String makeExcel() {
-		//현재 시간 파일이름 설정
+		//현재 날짜 파일이름 설정
         LocalDate now = LocalDate.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String formatedNow = now.format(formatter);
@@ -181,12 +192,163 @@ public class UpdownServiceImpl implements UpdownService {
         }
         
         try {
-        	FileOutputStream out = new FileOutputStream(new File(path, fileName));
+        	FileOutputStream out = new FileOutputStream(new File(downloadPath, fileName));
             workbook.write(out);
             workbook.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
+		return fileName;
+	}
+	
+	private String intToString(int num) {
+		return Integer.toString(num);
+	}
+	
+	private String longToString(Long num) {
+		return Long.toString(num);
+	}
+
+	@Override
+	public String makeXml() {
+		//현재 날짜 파일이름 설정
+	    LocalDate now = LocalDate.now();
+	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+	    String formatedNow = now.format(formatter);
+	    String fileName = "D" + formatedNow + ".xml";
+	    
+		try {
+			// Document 생성(문서 생성)
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document document = builder.newDocument();
+			// standalone="no" 제거
+			document.setXmlStandalone(true);  
+			
+			// Document에 products 태그 추가
+			Element root = document.createElement("Root");
+			document.appendChild(root);
+			
+			List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
+			
+			for(DownloadData data  : downloadList) {
+				// 태그 생성
+				Element text = document.createElement("text");
+				Element exportYear = document.createElement("export_year");
+				exportYear.setTextContent(intToString(data.getImport_year()));
+				Element hscode01 = document.createElement("hscode_01");
+				hscode01.setTextContent(data.getHscode_01());
+				Element hscode02 = document.createElement("hscode_02");
+				hscode02.setTextContent(data.getHscode_02());
+				Element hscode03 = document.createElement("hscode_03");
+				hscode03.setTextContent(data.getHscode_03());
+				Element areaName = document.createElement("area_name");
+				areaName.setTextContent(data.getArea_name());
+				Element nationName = document.createElement("nation_name");
+				nationName.setTextContent(data.getNation_name());
+				Element exportQty01 = document.createElement("export_qty_01");
+				exportQty01.setTextContent(longToString(data.getImport_qty_01()));
+				Element exportAmt01 = document.createElement("export_amt_01");
+				exportAmt01.setTextContent(longToString(data.getImport_amt_01()));
+				Element exportQty02 = document.createElement("export_qty_02");
+				exportQty02.setTextContent(longToString(data.getImport_qty_02()));
+				Element exportAmt02 = document.createElement("export_amt_02");
+				exportAmt02.setTextContent(longToString(data.getImport_amt_02()));
+				Element exportQty03 = document.createElement("export_qty_03");
+				exportQty03.setTextContent(longToString(data.getImport_qty_03()));
+				Element exportAmt03 = document.createElement("export_amt_03");
+				exportAmt03.setTextContent(longToString(data.getImport_amt_03()));
+				Element exportQty04 = document.createElement("export_qty_04");
+				exportQty04.setTextContent(longToString(data.getImport_qty_04()));
+				Element exportAmt04 = document.createElement("export_amt_04");
+				exportAmt04.setTextContent(longToString(data.getImport_amt_04()));
+				Element exportQty05 = document.createElement("export_qty_05");
+				exportQty05.setTextContent(longToString(data.getImport_qty_05()));
+				Element exportAmt05 = document.createElement("export_amt_05");
+				exportAmt05.setTextContent(longToString(data.getImport_amt_05()));
+				Element exportQty06 = document.createElement("export_qty_06");
+				exportQty06.setTextContent(longToString(data.getImport_qty_06()));
+				Element exportAmt06 = document.createElement("export_amt_06");
+				exportAmt06.setTextContent(longToString(data.getImport_amt_06()));
+				Element exportQty07 = document.createElement("export_qty_07");
+				exportQty07.setTextContent(longToString(data.getImport_qty_07()));
+				Element exportAmt07 = document.createElement("export_amt_07");
+				exportAmt07.setTextContent(longToString(data.getImport_amt_07()));
+				Element exportQty08 = document.createElement("export_qty_08");
+				exportQty08.setTextContent(longToString(data.getImport_qty_08()));
+				Element exportAmt08 = document.createElement("export_amt_08");
+				exportAmt08.setTextContent(longToString(data.getImport_amt_08()));
+				Element exportQty09 = document.createElement("export_qty_09");
+				exportQty09.setTextContent(longToString(data.getImport_qty_09()));
+				Element exportAmt09 = document.createElement("export_amt_09");
+				exportAmt09.setTextContent(longToString(data.getImport_amt_09()));
+				Element exportQty10 = document.createElement("export_qty_10");
+				exportQty10.setTextContent(longToString(data.getImport_qty_10()));
+				Element exportAmt10 = document.createElement("export_amt_10");
+				exportAmt10.setTextContent(longToString(data.getImport_amt_10()));
+				Element exportQty11 = document.createElement("export_qty_11");
+				exportQty11.setTextContent(longToString(data.getImport_qty_11()));
+				Element exportAmt11 = document.createElement("export_amt_11");
+				exportAmt11.setTextContent(longToString(data.getImport_amt_11()));
+				Element exportQty12 = document.createElement("export_qty_12");
+				exportQty12.setTextContent(longToString(data.getImport_qty_12()));
+				Element exportAmt12 = document.createElement("export_amt_12");
+				exportAmt12.setTextContent(longToString(data.getImport_amt_12()));
+				
+				// 태그 배치
+				root.appendChild(text);
+				text.appendChild(exportYear);
+				text.appendChild(hscode01);
+				text.appendChild(hscode02);
+				text.appendChild(hscode03);
+				text.appendChild(areaName);
+				text.appendChild(nationName);
+				text.appendChild(exportQty01);
+				text.appendChild(exportAmt01);
+				text.appendChild(exportQty02);
+				text.appendChild(exportAmt02);
+				text.appendChild(exportQty03);
+				text.appendChild(exportAmt03);
+				text.appendChild(exportQty04);
+				text.appendChild(exportAmt04);
+				text.appendChild(exportQty05);
+				text.appendChild(exportAmt05);
+				text.appendChild(exportQty06);
+				text.appendChild(exportAmt06);
+				text.appendChild(exportQty07);
+				text.appendChild(exportAmt07);
+				text.appendChild(exportQty08);
+				text.appendChild(exportAmt08);
+				text.appendChild(exportQty09);
+				text.appendChild(exportAmt09);
+				text.appendChild(exportQty10);
+				text.appendChild(exportAmt10);
+				text.appendChild(exportQty11);
+				text.appendChild(exportAmt11);
+				text.appendChild(exportQty12);
+				text.appendChild(exportAmt12);
+			}
+			
+			// XML 생성
+			TransformerFactory transformerFactory = TransformerFactory.newInstance();
+			Transformer transformer = transformerFactory.newTransformer();
+			// setOutputProperty  : 출력형태 만들 때 사용
+			transformer.setOutputProperty("encoding", "UTF-8");  
+			// 들여쓰기 허용
+			transformer.setOutputProperty("indent", "yes");
+			transformer.setOutputProperty(OutputKeys.STANDALONE, "yes");
+			// document.setXmlStandalone(true); 하면 개행이 안 되기 때문에 추가
+			transformer.setOutputProperty("doctype-public", "yes");
+			
+			Source source = new DOMSource(document);
+			StreamResult result = new StreamResult(new File(downloadPath, fileName));
+			
+			transformer.transform(source, result);
+			
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
 		return fileName;
 	}
 	

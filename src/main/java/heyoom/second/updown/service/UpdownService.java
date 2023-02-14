@@ -7,5 +7,6 @@ public interface UpdownService {
 	
 	String makeTxt() throws IOException;
 	String makeExcel();
+	String makeXml();
 
 }

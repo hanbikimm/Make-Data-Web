@@ -11,6 +11,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.util.UriUtils;
 
@@ -26,8 +27,8 @@ public class UpdownController {
 	
 	private final UpdownService updownService;
 	
-	@Value("${dir.path}")
-	private String path;
+	@Value("${download.path}")
+	private String downloadPath;
 	
 	@GetMapping
 	public String main() {
@@ -39,43 +40,25 @@ public class UpdownController {
 		return "updown-log";
 	}
 	
-	
-	
-	// Text 파일 다운로드
-	@GetMapping("/download/txt")
-	public ResponseEntity<Resource> downloadTextFile() throws IOException{
-		String fileName = updownService.makeTxt();
-		UrlResource urlResource = new UrlResource("file:" + path + fileName);
+	// 파일 다운로드
+	@GetMapping("/download/{num}")
+	public ResponseEntity<Resource> downloadFile(@PathVariable String num) throws IOException{
+		String fileName;
+		switch (num) {
+		case "1": 
+			fileName = updownService.makeTxt();
+			break;
+		case "2": 
+			fileName = updownService.makeExcel();
+			break;
+		case "3": 
+			fileName = updownService.makeXml();
+			break;
+		default:
+			throw new IllegalArgumentException("Unexpected value: " + num);
+		}
 		
-		String encodedUploadFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
-		String contentDisposition = "attachment; filename=\"" + encodedUploadFileName + "\"";
-		
-		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-				.body(urlResource);
-	}
-	
-	// Excel 파일 다운로드
-	@GetMapping("/download/excel")
-	public ResponseEntity<Resource> downloadExcelFile() throws IOException{
-		String fileName = updownService.makeExcel();
-        
-		UrlResource urlResource = new UrlResource("file:" + path + fileName);
-		
-		String encodedUploadFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
-		String contentDisposition = "attachment; filename=\"" + encodedUploadFileName + "\"";
-		
-		return ResponseEntity.ok()
-				.header(HttpHeaders.CONTENT_DISPOSITION, contentDisposition)
-				.body(urlResource);
-	}
-		
-	// 첨부파일 다운로드
-	@GetMapping("/download/xml")
-	public ResponseEntity<Resource> downloadXmlFile() throws IOException{
-		String fileName = updownService.makeTxt();
-        
-		UrlResource urlResource = new UrlResource("file:" + path + fileName);
+		UrlResource urlResource = new UrlResource("file:" + downloadPath + fileName);
 		
 		String encodedUploadFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
 		String contentDisposition = "attachment; filename=\"" + encodedUploadFileName + "\"";
