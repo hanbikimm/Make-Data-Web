@@ -5,8 +5,8 @@ import java.io.IOException;
 
 public interface UpdownService {
 	
-	String makeTxt() throws IOException;
-	String makeExcel();
-	String makeXml();
+	String downloadTxt() throws IOException;
+	String downloadExcel();
+	String downloadXml();
 
 }

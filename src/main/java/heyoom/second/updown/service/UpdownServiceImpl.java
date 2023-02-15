@@ -46,6 +46,23 @@ public class UpdownServiceImpl implements UpdownService {
 	@Value("${download.path}")
 	private String downloadPath;
 	
+	private String getMonthAndFileName(String extension) {
+		//현재 날짜 파일이름 설정
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedDate = now.format(dateFormatter);
+        String fileName = "D" + formatedDate + extension;
+        
+        // 폴더 생성
+        String monthFolder = formatedDate.substring(0, 6) + "/";
+		File folder = new File(downloadPath + monthFolder);
+        if (!folder.exists()) {
+			folder.mkdirs();
+        }
+        
+        return monthFolder + fileName;
+	}
+	
 	private String writeSpace(String data, int byteLength) throws UnsupportedEncodingException {
 		int spaceLength = byteLength - data.getBytes("EUC-KR").length;
 		String result = "";
@@ -73,23 +90,15 @@ public class UpdownServiceImpl implements UpdownService {
 	}
 	
 	@Override
-	public String makeTxt() throws IOException {
-		List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
-		
-		//현재 날짜 파일이름 설정
-        LocalDate now = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String formatedNow = now.format(formatter);
-        String fileName = "D" + formatedNow + ".txt";
+	public String downloadTxt() throws IOException {
+		//월별 폴더 및 파일 이름 설정
+		String monthAndFileName = getMonthAndFileName(".txt");
         
-        //파일 생성
-        File file = new File(downloadPath + fileName);
-        if (!file.exists()) {
-            file.createNewFile();
-        }
-        
-        FileWriter fw = new FileWriter(file);
+        //파일 생성 및 writer 열기
+        FileWriter fw = new FileWriter(new File(downloadPath + monthAndFileName));
         PrintWriter writer = new PrintWriter(fw);
+        
+        List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
         
         log.info("euc-kr= {}", changeEncoding(downloadList.get(0).getNation_name()));
         log.info("euc-kr's byte length= {}", changeEncoding(downloadList.get(0).getNation_name()).getBytes().length);
@@ -133,16 +142,13 @@ public class UpdownServiceImpl implements UpdownService {
 		}
 		writer.close();
 		
-		return fileName;
+		return monthAndFileName;
 	}
 
 	@Override
-	public String makeExcel() {
-		//현재 날짜 파일이름 설정
-        LocalDate now = LocalDate.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-        String formatedNow = now.format(formatter);
-        String fileName = "D" + formatedNow + ".xlsx";
+	public String downloadExcel() {
+		//월별 폴더 및 파일 이름 설정
+		String monthAndFileName = getMonthAndFileName(".xlsx");
         
 		 // 빈 Workbook 생성
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -192,13 +198,13 @@ public class UpdownServiceImpl implements UpdownService {
         }
         
         try {
-        	FileOutputStream out = new FileOutputStream(new File(downloadPath, fileName));
+        	FileOutputStream out = new FileOutputStream(new File(downloadPath + monthAndFileName));
             workbook.write(out);
             workbook.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
-		return fileName;
+		return monthAndFileName;
 	}
 	
 	private String intToString(int num) {
@@ -210,12 +216,9 @@ public class UpdownServiceImpl implements UpdownService {
 	}
 
 	@Override
-	public String makeXml() {
-		//현재 날짜 파일이름 설정
-	    LocalDate now = LocalDate.now();
-	    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
-	    String formatedNow = now.format(formatter);
-	    String fileName = "D" + formatedNow + ".xml";
+	public String downloadXml() {
+		//월별 폴더 및 파일 이름 설정
+		String monthAndFileName = getMonthAndFileName(".xml");
 	    
 		try {
 			// Document 생성(문서 생성)
@@ -341,7 +344,7 @@ public class UpdownServiceImpl implements UpdownService {
 			transformer.setOutputProperty("doctype-public", "yes");
 			
 			Source source = new DOMSource(document);
-			StreamResult result = new StreamResult(new File(downloadPath, fileName));
+			StreamResult result = new StreamResult(new File(downloadPath + monthAndFileName));
 			
 			transformer.transform(source, result);
 			
@@ -349,7 +352,7 @@ public class UpdownServiceImpl implements UpdownService {
 			e.printStackTrace();
 		}
 		
-		return fileName;
+		return monthAndFileName;
 	}
 	
 	

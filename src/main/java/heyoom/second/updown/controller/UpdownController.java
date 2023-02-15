@@ -43,23 +43,24 @@ public class UpdownController {
 	// 파일 다운로드
 	@GetMapping("/download/{num}")
 	public ResponseEntity<Resource> downloadFile(@PathVariable String num) throws IOException{
-		String fileName;
+		String monthAndfile;
 		switch (num) {
 		case "1": 
-			fileName = updownService.makeTxt();
+			monthAndfile = updownService.downloadTxt();
 			break;
 		case "2": 
-			fileName = updownService.makeExcel();
+			monthAndfile = updownService.downloadExcel();
 			break;
 		case "3": 
-			fileName = updownService.makeXml();
+			monthAndfile = updownService.downloadXml();
 			break;
 		default:
 			throw new IllegalArgumentException("Unexpected value: " + num);
 		}
 		
-		UrlResource urlResource = new UrlResource("file:" + downloadPath + fileName);
+		UrlResource urlResource = new UrlResource("file:" + downloadPath + monthAndfile);
 		
+		String fileName = monthAndfile.substring(7);
 		String encodedUploadFileName = UriUtils.encode(fileName, StandardCharsets.UTF_8);
 		String contentDisposition = "attachment; filename=\"" + encodedUploadFileName + "\"";
 		
