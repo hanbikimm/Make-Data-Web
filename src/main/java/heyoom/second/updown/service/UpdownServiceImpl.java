@@ -403,7 +403,6 @@ public class UpdownServiceImpl implements UpdownService {
 					UploadData data = new UploadData();
 					data.setExec_way('M');
 					data.setFile_kind("EXL");
-					data.setUpload_seq((long) i);
 					
 					int cells = row.getPhysicalNumberOfCells();
 					for (int j=0; j<cells; j++) {
@@ -527,6 +526,137 @@ public class UpdownServiceImpl implements UpdownService {
 		return "Excel 파일 Upload 완료";
 	}
 
+	@Override
+	public String uploadXml() {
+		String fileName = getFileName(".xml");
+		try {
+			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+			DocumentBuilder builder = factory.newDocumentBuilder();
+			Document document = builder.parse(new File(storedPath + fileName)); // product.xml 파싱(분석)
+			
+			// 최상위 요소(root)
+			Element root = document.getDocumentElement(); 
+			log.info("최상위 요소 : {}", root.getNodeName()); //root 
+			
+			// 최상위 요소의 자식 노드들
+			NodeList nodeList = root.getChildNodes(); // 자식노드들 가져오기
+			
+			for(int i=0; i<nodeList.getLength(); i++) {
+				Node node = nodeList.item(i);
+				log.info("node.getNodeName: {}", node.getNodeName()); //text
+				if(node.getNodeType() == Node.ELEMENT_NODE) { // ELEMENT_NODE : Element요소인지 확인하는 것 (줄바꿈(#text) 뺴기위함)
+					NodeList childNodeList = node.getChildNodes();
+					
+					UploadData data = new UploadData();
+					data.setExec_way('M');
+					data.setFile_kind("XML");
+
+					for(int j=0; j<childNodeList.getLength(); j++) {
+						Node childNode = childNodeList.item(j);
+						if(childNode.getNodeType() == Node.ELEMENT_NODE) {
+							switch(childNode.getNodeName()) {
+							case "export_year" : 
+								data.setExport_year(Integer.parseInt(childNode.getTextContent())); 
+								break;
+							case "hscode_01" : 
+								data.setHscode_01(childNode.getTextContent()); 
+								break;
+							case "hscode_02" : 
+								data.setHscode_02(childNode.getTextContent()); 
+								break;
+							case "hscode_03" : 
+								data.setHscode_03(childNode.getTextContent()); 
+								break;
+							case "area_name" : 
+								data.setArea_name(childNode.getTextContent()); 
+								break;
+							case "nation_name" : 
+								data.setNation_name(childNode.getTextContent()); 
+								break;
+							case "export_qty_01" : 
+								data.setExport_qty_01(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_01" : 
+								data.setExport_amt_01(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_02" : 
+								data.setExport_qty_02(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_02" : 
+								data.setExport_amt_02(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_03" : 
+								data.setExport_qty_03(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_03" : 
+								data.setExport_amt_03(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_04" : 
+								data.setExport_qty_04(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_04" : 
+								data.setExport_amt_04(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_05" : 
+								data.setExport_qty_05(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_05" : 
+								data.setExport_amt_05(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_06" : 
+								data.setExport_qty_06(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_06" : 
+								data.setExport_amt_06(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_07" : 
+								data.setExport_qty_07(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_07" : 
+								data.setExport_amt_07(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_08" : 
+								data.setExport_qty_08(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_08" : 
+								data.setExport_amt_08(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_09" : 
+								data.setExport_qty_09(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_09" : 
+								data.setExport_amt_09(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_10" : 
+								data.setExport_qty_10(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_10" : 
+								data.setExport_amt_10(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_11" : 
+								data.setExport_qty_11(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_11" : 
+								data.setExport_amt_11(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_qty_12" : 
+								data.setExport_qty_12(Long.parseLong(childNode.getTextContent())); 
+								break;
+							case "export_amt_12" : 
+								data.setExport_amt_12(Long.parseLong(childNode.getTextContent())); 
+								break;
+							}
+						}
+							
+					}
+					int result = updownMapper.postUploadData(data);
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
 	
 

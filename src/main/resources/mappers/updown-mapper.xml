@@ -8,12 +8,12 @@
 	
 	<insert id="postUploadData" parameterType="heyoom.second.updown.domain.UploadData">
     	INSERT INTO t_upload 
-        VALUES (now(), #{exec_way}, #{file_kind}, #{upload_seq}, #{export_year}, #{hscode_01},#{hscode_02}, #{hscode_03},
-        		#{area_name}, #{nation_name}, #{export_qty_01}, #{export_amt_01}, #{export_qty_02}, #{export_amt_02},
-        		#{export_qty_03}, #{export_amt_03}, #{export_qty_04}, #{export_amt_04}, #{export_qty_05}, #{export_amt_05},
-        		#{export_qty_06}, #{export_amt_06}, #{export_qty_07}, #{export_amt_07}, #{export_qty_08}, #{export_amt_08},
-        		#{export_qty_09}, #{export_amt_09}, #{export_qty_10}, #{export_amt_10}, #{export_qty_11}, #{export_amt_11},
-        		#{export_qty_12}, #{export_amt_12})
+        VALUES (now(), #{exec_way}, #{file_kind}, (select IFNULL(MAX(upload_seq) + 1, 1) FROM t_upload b), #{export_year}, 
+        		#{hscode_01},#{hscode_02}, #{hscode_03}, #{area_name}, #{nation_name}, 
+        		#{export_qty_01}, #{export_amt_01}, #{export_qty_02}, #{export_amt_02}, #{export_qty_03}, #{export_amt_03}, 
+        		#{export_qty_04}, #{export_amt_04}, #{export_qty_05}, #{export_amt_05}, #{export_qty_06}, #{export_amt_06}, 
+        		#{export_qty_07}, #{export_amt_07}, #{export_qty_08}, #{export_amt_08}, #{export_qty_09}, #{export_amt_09}, 
+        		#{export_qty_10}, #{export_amt_10}, #{export_qty_11}, #{export_amt_11}, #{export_qty_12}, #{export_amt_12})
     </insert>
 	
 </mapper>
