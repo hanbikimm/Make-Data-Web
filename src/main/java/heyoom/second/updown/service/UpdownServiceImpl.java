@@ -1,6 +1,8 @@
 package heyoom.second.updown.service;
 
+import java.awt.image.LookupOp;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -8,6 +10,8 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -23,6 +27,7 @@ import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
 import org.apache.poi.ss.usermodel.Cell;
+import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -30,8 +35,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import heyoom.second.updown.domain.DownloadData;
+import heyoom.second.updown.domain.UploadData;
 import heyoom.second.updown.mapper.UpdownMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -45,6 +53,9 @@ public class UpdownServiceImpl implements UpdownService {
 	
 	@Value("${download.path}")
 	private String downloadPath;
+	
+	@Value("${stored.path}")
+	private String storedPath;
 	
 	private String getMonthAndFileName(String extension) {
 		//현재 날짜 파일이름 설정
@@ -61,6 +72,16 @@ public class UpdownServiceImpl implements UpdownService {
         }
         
         return monthFolder + fileName;
+	}
+	
+	private String getFileName(String extension) {
+		//현재 날짜 파일이름 설정
+        LocalDate now = LocalDate.now();
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+        String formatedDate = now.format(dateFormatter);
+        String fileName = "U" + formatedDate + extension;
+        
+        return fileName;
 	}
 	
 	private String writeSpace(String data, int byteLength) throws UnsupportedEncodingException {
@@ -98,7 +119,7 @@ public class UpdownServiceImpl implements UpdownService {
         FileWriter fw = new FileWriter(new File(downloadPath + monthAndFileName));
         PrintWriter writer = new PrintWriter(fw);
         
-        List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
+        List<DownloadData> downloadList = updownMapper.getDownloadDatas();
         
         log.info("euc-kr= {}", changeEncoding(downloadList.get(0).getNation_name()));
         log.info("euc-kr's byte length= {}", changeEncoding(downloadList.get(0).getNation_name()).getBytes().length);
@@ -158,7 +179,7 @@ public class UpdownServiceImpl implements UpdownService {
         sheet.setColumnWidth(5, 4000);
         
         // Sheet를 채우기 위한 데이터들을 Map에 저장
-        List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
+        List<DownloadData> downloadList = updownMapper.getDownloadDatas();
         Map<Integer, Object[]> dataMap = new TreeMap<>();
         
         dataMap.put(1, new Object[]{"수출년도", "HSCODE1", "HSCODE2", "HSCODE3", "지역명", "국가명", "수출수량1", "수출금액1", "수출수량2", "수출금액2", 
@@ -232,7 +253,7 @@ public class UpdownServiceImpl implements UpdownService {
 			Element root = document.createElement("Root");
 			document.appendChild(root);
 			
-			List<DownloadData> downloadList = updownMapper.getDownLoadDatas();
+			List<DownloadData> downloadList = updownMapper.getDownloadDatas();
 			
 			for(DownloadData data  : downloadList) {
 				// 태그 생성
@@ -354,6 +375,158 @@ public class UpdownServiceImpl implements UpdownService {
 		
 		return monthAndFileName;
 	}
+
+	@Override
+	public String uploadTxt() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public String uploadExcel() {
+		String fileName = getFileName(".xlsx");
+		
+		try{
+			
+			FileInputStream file = new FileInputStream(new File(storedPath + fileName));
+            XSSFWorkbook workbook = new XSSFWorkbook(file);
+
+            // workbook의 sheet를 가저온다.
+            XSSFSheet sheet = workbook.getSheet("수출자료");
+            int rows = sheet.getPhysicalNumberOfRows();
+
+            // 모든 행(row)들을 조회한다.
+            for (int i=1; i<=rows; i++) {
+				Row row = sheet.getRow(i);
+				
+				if(row != null) {
+					UploadData data = new UploadData();
+					data.setExec_way('M');
+					data.setFile_kind("EXL");
+					data.setUpload_seq((long) i);
+					
+					int cells = row.getPhysicalNumberOfCells();
+					for (int j=0; j<cells; j++) {
+						Cell cell = row.getCell(j);
+						switch (j) {
+						case 0:
+							data.setExport_year((int)cell.getNumericCellValue());
+							break;
+						case 1:
+							if(cell.getCellType() == CellType.STRING) {
+								data.setHscode_01(cell.getStringCellValue());
+							}else {
+								data.setHscode_01(Integer.toString((int)cell.getNumericCellValue()));
+							}
+								
+							break;
+						case 2:
+							if(cell.getCellType() == CellType.STRING) {
+								data.setHscode_02(cell.getStringCellValue());
+							}else {
+								data.setHscode_02(Integer.toString((int)cell.getNumericCellValue()));
+							}
+							break;
+						case 3:
+							if(cell.getCellType() == CellType.STRING) {
+								data.setHscode_03(cell.getStringCellValue());
+							}else {
+								data.setHscode_03(Integer.toString((int)cell.getNumericCellValue()));
+							}
+							
+							break;
+						case 4:
+							data.setArea_name(cell.getStringCellValue());
+							break;
+						case 5:
+							data.setNation_name(cell.getStringCellValue());
+							break;
+						case 6:
+							data.setExport_qty_01((long) cell.getNumericCellValue());
+							break;
+						case 7:
+							data.setExport_amt_01((long) cell.getNumericCellValue());
+							break;
+						case 8:
+							data.setExport_qty_02((long) cell.getNumericCellValue());
+							break;
+						case 9:
+							data.setExport_amt_02((long) cell.getNumericCellValue());
+							break;
+						case 10:
+							data.setExport_qty_03((long) cell.getNumericCellValue());
+							break;
+						case 11:
+							data.setExport_amt_03((long) cell.getNumericCellValue());
+							break;
+						case 12:
+							data.setExport_qty_04((long) cell.getNumericCellValue());
+							break;
+						case 13:
+							data.setExport_amt_04((long) cell.getNumericCellValue());
+							break;
+						case 14:
+							data.setExport_qty_05((long) cell.getNumericCellValue());
+							break;
+						case 15:
+							data.setExport_amt_05((long) cell.getNumericCellValue());
+							break;
+						case 16:
+							data.setExport_qty_06((long) cell.getNumericCellValue());
+							break;
+						case 17:
+							data.setExport_amt_06((long) cell.getNumericCellValue());
+							break;
+						case 18:
+							data.setExport_qty_07((long) cell.getNumericCellValue());
+							break;
+						case 19:
+							data.setExport_amt_07((long) cell.getNumericCellValue());
+							break;
+						case 20:
+							data.setExport_qty_08((long) cell.getNumericCellValue());
+							break;
+						case 21:
+							data.setExport_amt_08((long) cell.getNumericCellValue());
+							break;
+						case 22:
+							data.setExport_qty_09((long) cell.getNumericCellValue());
+							break;
+						case 23:
+							data.setExport_amt_09((long) cell.getNumericCellValue());
+							break;
+						case 24:
+							data.setExport_qty_10((long) cell.getNumericCellValue());
+							break;
+						case 25:
+							data.setExport_amt_10((long) cell.getNumericCellValue());
+							break;
+						case 26:
+							data.setExport_qty_11((long) cell.getNumericCellValue());
+							break;
+						case 27:
+							data.setExport_amt_11((long) cell.getNumericCellValue());
+							break;
+						case 28:
+							data.setExport_qty_12((long) cell.getNumericCellValue());
+							break;
+						case 29:
+							data.setExport_amt_12((long) cell.getNumericCellValue());
+							break;
+						}
+					}
+					
+					int result = updownMapper.postUploadData(data);
+//					log.info("upload result= {}", result);
+				}
+			}
+            
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+		return "Excel 파일 Upload 완료";
+	}
+
 	
 	
 
