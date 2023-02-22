@@ -1,6 +1,6 @@
 package heyoom.second.updown.domain;
 
-import lombok.Builder;
+//import lombok.Builder;
 import lombok.Data;
 
 @Data

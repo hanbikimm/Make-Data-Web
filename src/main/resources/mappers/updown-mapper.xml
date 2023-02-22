@@ -3,12 +3,18 @@
 
 <mapper namespace="heyoom.second.updown.mapper.UpdownMapper">
 	<select id="getDownloadDatas" resultType="heyoom.second.updown.domain.DownloadData">
-		SELECT * FROM t_download
+		SELECT
+			download_seq, import_year, hscode_01, hscode_02, hscode_03,
+			CONVERT(area_name USING 'euckr') as 'area_name', CONVERT(nation_name USING 'euckr') as 'nation_name',
+			import_qty_01, import_amt_01, import_qty_02, import_amt_02, import_qty_03, import_amt_03, import_qty_04, import_amt_04,
+			import_qty_05, import_amt_05, import_qty_06, import_amt_06, import_qty_07, import_amt_07, import_qty_08, import_amt_08,
+			import_qty_09, import_amt_09, import_qty_10, import_amt_10, import_qty_11, import_amt_11, import_qty_12, import_amt_12
+		FROM t_download
 	</select>
 	
 	<insert id="postUploadData" parameterType="heyoom.second.updown.domain.UploadData">
     	INSERT INTO t_upload 
-        VALUES (now(), #{exec_way}, #{file_kind}, (select IFNULL(MAX(upload_seq) + 1, 1) FROM t_upload b), #{export_year}, 
+        VALUES (now(), #{exec_way}, #{file_kind}, #{upload_seq}, #{export_year}, 
         		#{hscode_01},#{hscode_02}, #{hscode_03}, #{area_name}, #{nation_name}, 
         		#{export_qty_01}, #{export_amt_01}, #{export_qty_02}, #{export_amt_02}, #{export_qty_03}, #{export_amt_03}, 
         		#{export_qty_04}, #{export_amt_04}, #{export_qty_05}, #{export_amt_05}, #{export_qty_06}, #{export_amt_06}, 

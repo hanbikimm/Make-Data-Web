@@ -1,19 +1,24 @@
 package heyoom.second.updown.service;
 
-import java.awt.image.LookupOp;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.Set;
 import java.util.TreeMap;
 
@@ -26,9 +31,11 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
 import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.Row;
+import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Value;
@@ -54,15 +61,18 @@ public class UpdownServiceImpl implements UpdownService {
 	@Value("${download.path}")
 	private String downloadPath;
 	
+	@Value("${upload.path}")
+	private String uploadPath;
+	
 	@Value("${stored.path}")
 	private String storedPath;
 	
-	private String getMonthAndFileName(String extension) {
+	private String getMonthAndFileName(String type, String extension) {
 		//현재 날짜 파일이름 설정
         LocalDate now = LocalDate.now();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String formatedDate = now.format(dateFormatter);
-        String fileName = "D" + formatedDate + extension;
+        String fileName = type + formatedDate + extension;
         
         // 폴더 생성
         String monthFolder = formatedDate.substring(0, 6) + "/";
@@ -74,12 +84,12 @@ public class UpdownServiceImpl implements UpdownService {
         return monthFolder + fileName;
 	}
 	
-	private String getFileName(String extension) {
+	private String getFileName(String type, String extension) {
 		//현재 날짜 파일이름 설정
         LocalDate now = LocalDate.now();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyyMMdd");
         String formatedDate = now.format(dateFormatter);
-        String fileName = "U" + formatedDate + extension;
+        String fileName = type + formatedDate + extension;
         
         return fileName;
 	}
@@ -106,14 +116,10 @@ public class UpdownServiceImpl implements UpdownService {
 		return result;
 	}
 	
-	private String changeEncoding(String data) throws UnsupportedEncodingException {
-		return new String(data.getBytes("EUC-KR"), "EUC-KR");
-	}
-	
 	@Override
 	public String downloadTxt() throws IOException {
 		//월별 폴더 및 파일 이름 설정
-		String monthAndFileName = getMonthAndFileName(".txt");
+		String monthAndFileName = getMonthAndFileName("D", ".txt");
         
         //파일 생성 및 writer 열기
         FileWriter fw = new FileWriter(new File(downloadPath + monthAndFileName));
@@ -121,20 +127,16 @@ public class UpdownServiceImpl implements UpdownService {
         
         List<DownloadData> downloadList = updownMapper.getDownloadDatas();
         
-        log.info("euc-kr= {}", changeEncoding(downloadList.get(0).getNation_name()));
-        log.info("euc-kr's byte length= {}", changeEncoding(downloadList.get(0).getNation_name()).getBytes().length);
-        log.info("byte length= {}", downloadList.get(0).getNation_name().getBytes("EUC-KR").length);
-        
         //파일 쓰기
-		for(DownloadData data : downloadList ) {
+		for(DownloadData data : downloadList) {
 			writer.print(data.getImport_year());
 			writer.print(data.getHscode_01());
 			writer.print(data.getHscode_02());
 			writer.print(writeZero(data.getHscode_03(), 4));
 			writer.print(data.getHscode_03());
-			writer.print(changeEncoding(data.getArea_name()));
+			writer.print(data.getArea_name());
 			writer.print(writeSpace(data.getArea_name(), 12));
-			writer.print(changeEncoding(data.getNation_name()));
+			writer.print(data.getNation_name());
 			writer.print(writeSpace(data.getNation_name(), 22));
 			writer.print(String.format("%013d", data.getImport_qty_01()));
 			writer.print(String.format("%013d", data.getImport_amt_01()));
@@ -165,11 +167,11 @@ public class UpdownServiceImpl implements UpdownService {
 		
 		return monthAndFileName;
 	}
-
+	
 	@Override
 	public String downloadExcel() {
 		//월별 폴더 및 파일 이름 설정
-		String monthAndFileName = getMonthAndFileName(".xlsx");
+		String monthAndFileName = getMonthAndFileName("D", ".xlsx");
         
 		 // 빈 Workbook 생성
         XSSFWorkbook workbook = new XSSFWorkbook();
@@ -239,7 +241,7 @@ public class UpdownServiceImpl implements UpdownService {
 	@Override
 	public String downloadXml() {
 		//월별 폴더 및 파일 이름 설정
-		String monthAndFileName = getMonthAndFileName(".xml");
+		String monthAndFileName = getMonthAndFileName("D", ".xml");
 	    
 		try {
 			// Document 생성(문서 생성)
@@ -378,24 +380,113 @@ public class UpdownServiceImpl implements UpdownService {
 
 	@Override
 	public String uploadTxt() {
-		// TODO Auto-generated method stub
-		return null;
+		String fileName = getFileName("U", ".txt");
+		String monthAndFileName = getMonthAndFileName("U", ".txt");
+		
+		try{
+			// 파일 원본 서버에 저장
+			File file = new File(storedPath + fileName);
+			File folder = new File(uploadPath + monthAndFileName.substring(0, 7));
+			if (!folder.exists()) {
+				folder.mkdirs();
+			}	
+			
+			File copyFile = new File(uploadPath + monthAndFileName);
+			Files.copy(file.toPath(), copyFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
+			
+			BufferedReader reader = new BufferedReader(new FileReader(file));
+		 
+	        String data;
+	        Long upload_seq = 1L;
+	        while ((data = reader.readLine()) != null) {
+	        	UploadData upload = new UploadData();
+	        	String changeSpace = data.replaceAll("\\s+", " ");
+	        	String[] dataList = changeSpace.split(" ");
+	        	upload.setExec_way('M');
+	        	upload.setFile_kind("TXT");
+	        	upload.setUpload_seq(upload_seq);
+	        	upload_seq++;
+	        	upload.setExport_year(Integer.parseInt(dataList[0].substring(0, 4)));
+	        	upload.setHscode_01(dataList[0].substring(4, 8));
+	        	upload.setHscode_02(dataList[0].substring(8, 10));
+	        	upload.setHscode_03(dataList[0].substring(10, 14));
+	        	upload.setArea_name(dataList[0].substring(14));
+	        	upload.setNation_name(dataList[1]);
+	        	upload.setExport_qty_01(Long.parseLong(dataList[2].substring(0, 13)));
+	        	upload.setExport_amt_01(Long.parseLong(dataList[2].substring(13, 26)));
+	        	upload.setExport_qty_02(Long.parseLong(dataList[2].substring(26, 39)));
+	        	upload.setExport_amt_02(Long.parseLong(dataList[2].substring(39, 52)));
+	        	upload.setExport_qty_03(Long.parseLong(dataList[2].substring(52, 65)));
+	        	upload.setExport_amt_03(Long.parseLong(dataList[2].substring(65, 78)));
+	        	upload.setExport_qty_04(Long.parseLong(dataList[2].substring(78, 91)));
+	        	upload.setExport_amt_04(Long.parseLong(dataList[2].substring(91, 104)));
+	        	upload.setExport_qty_05(Long.parseLong(dataList[2].substring(104, 117)));
+	        	upload.setExport_amt_05(Long.parseLong(dataList[2].substring(117, 130)));
+	        	upload.setExport_qty_06(Long.parseLong(dataList[2].substring(130, 143)));
+	        	upload.setExport_amt_06(Long.parseLong(dataList[2].substring(143, 156)));
+	        	upload.setExport_qty_07(Long.parseLong(dataList[2].substring(156, 169)));
+	        	upload.setExport_amt_07(Long.parseLong(dataList[2].substring(169, 182)));
+	        	upload.setExport_qty_08(Long.parseLong(dataList[2].substring(182, 195)));
+	        	upload.setExport_amt_08(Long.parseLong(dataList[2].substring(195, 208)));
+	        	upload.setExport_qty_09(Long.parseLong(dataList[2].substring(208, 221)));
+	        	upload.setExport_amt_09(Long.parseLong(dataList[2].substring(221, 234)));
+	        	upload.setExport_qty_10(Long.parseLong(dataList[2].substring(234, 247)));
+	        	upload.setExport_amt_10(Long.parseLong(dataList[2].substring(247, 260)));
+	        	upload.setExport_qty_11(Long.parseLong(dataList[2].substring(260, 273)));
+	        	upload.setExport_amt_11(Long.parseLong(dataList[2].substring(273, 286)));
+	        	upload.setExport_qty_12(Long.parseLong(dataList[2].substring(286, 299)));
+	        	upload.setExport_amt_12(Long.parseLong(dataList[2].substring(299, 312)));
+	        	
+	        	int result = updownMapper.postUploadData(upload);
+	        }
+	        reader.close();
+			
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "TEXT 파일 UPLOAD 완료";
 	}
 
 	@Override
 	public String uploadExcel() {
-		String fileName = getFileName(".xlsx");
+		String fileName = getFileName("U", ".xls");
+		String monthAndFileName = getMonthAndFileName("U", ".xls");
+		File file = new File(storedPath + fileName);
+		
+		if (!file.exists()) {
+			fileName = getFileName("U", ".xlsx");
+			monthAndFileName = getMonthAndFileName("U", "xlsx");
+			file = new File(storedPath + fileName);
+		}
 		
 		try{
+			// 파일 원본 서버에 저장
 			
-			FileInputStream file = new FileInputStream(new File(storedPath + fileName));
-            XSSFWorkbook workbook = new XSSFWorkbook(file);
+			File folder = new File(uploadPath + monthAndFileName.substring(0, 7));
+			if (!folder.exists()) {
+				folder.mkdirs();
+			}	
 
+			File copyFile = new File(uploadPath + monthAndFileName);
+			Files.copy(file.toPath(), copyFile.toPath(),StandardCopyOption.REPLACE_EXISTING);
+			
+			//파일 읽기
+			FileInputStream fileStream = new FileInputStream(file);
+            
+			Sheet sheet = null;
             // workbook의 sheet를 가저온다.
-            XSSFSheet sheet = workbook.getSheet("수출자료");
-            int rows = sheet.getPhysicalNumberOfRows();
-
+            if(fileName.endsWith(".xlsx")) {
+            	try (XSSFWorkbook workbook = new XSSFWorkbook(fileStream)) {
+					sheet = workbook.getSheet("수출자료");
+				}
+            }else if (fileName.endsWith(".xls")) {
+				try (HSSFWorkbook workbook = new HSSFWorkbook(fileStream)) {
+					sheet = workbook.getSheet("수출자료");
+				}
+			}
+            
             // 모든 행(row)들을 조회한다.
+            int rows = sheet.getPhysicalNumberOfRows();
             for (int i=1; i<=rows; i++) {
 				Row row = sheet.getRow(i);
 				
@@ -403,6 +494,7 @@ public class UpdownServiceImpl implements UpdownService {
 					UploadData data = new UploadData();
 					data.setExec_way('M');
 					data.setFile_kind("EXL");
+					data.setUpload_seq((long) i);
 					
 					int cells = row.getPhysicalNumberOfCells();
 					for (int j=0; j<cells; j++) {
@@ -528,29 +620,41 @@ public class UpdownServiceImpl implements UpdownService {
 
 	@Override
 	public String uploadXml() {
-		String fileName = getFileName(".xml");
+		String fileName = getFileName("U", ".xml");
+		String monthAndFileName = getMonthAndFileName("U", ".xml");
 		try {
+			// 파일 원본 서버에 저장
+			File file = new File(storedPath + fileName);
+			File folder = new File(uploadPath + monthAndFileName.substring(0, 7));
+			if (!folder.exists()) {
+				folder.mkdirs();
+			}	
+			File copyFile = new File(uploadPath + monthAndFileName);
+			Files.copy(file.toPath(), copyFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+			
+			//파일 읽기
 			DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
 			DocumentBuilder builder = factory.newDocumentBuilder();
-			Document document = builder.parse(new File(storedPath + fileName)); // product.xml 파싱(분석)
+			Document document = builder.parse(file); // product.xml 파싱(분석)
 			
 			// 최상위 요소(root)
 			Element root = document.getDocumentElement(); 
-			log.info("최상위 요소 : {}", root.getNodeName()); //root 
 			
 			// 최상위 요소의 자식 노드들
 			NodeList nodeList = root.getChildNodes(); // 자식노드들 가져오기
+			Long seq_num = 1L;
 			
 			for(int i=0; i<nodeList.getLength(); i++) {
 				Node node = nodeList.item(i);
-				log.info("node.getNodeName: {}", node.getNodeName()); //text
 				if(node.getNodeType() == Node.ELEMENT_NODE) { // ELEMENT_NODE : Element요소인지 확인하는 것 (줄바꿈(#text) 뺴기위함)
 					NodeList childNodeList = node.getChildNodes();
 					
 					UploadData data = new UploadData();
 					data.setExec_way('M');
 					data.setFile_kind("XML");
-
+					data.setUpload_seq(seq_num);
+					seq_num++;
+					
 					for(int j=0; j<childNodeList.getLength(); j++) {
 						Node childNode = childNodeList.item(j);
 						if(childNode.getNodeType() == Node.ELEMENT_NODE) {
@@ -655,7 +759,7 @@ public class UpdownServiceImpl implements UpdownService {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
-		return null;
+		return "XML 파일 Upload 완료";
 	}
 	
 	
