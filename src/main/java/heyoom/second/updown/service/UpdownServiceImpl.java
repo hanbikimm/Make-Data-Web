@@ -449,13 +449,13 @@ public class UpdownServiceImpl implements UpdownService {
 
 	@Override
 	public String uploadExcel() {
-		String fileName = getFileName("U", ".xls");
-		String monthAndFileName = getMonthAndFileName("U", ".xls");
+		String fileName = getFileName("U", ".xlsx");
+		String monthAndFileName = getMonthAndFileName("U", ".xlsx");
 		File file = new File(storedPath + fileName);
 		
 		if (!file.exists()) {
-			fileName = getFileName("U", ".xlsx");
-			monthAndFileName = getMonthAndFileName("U", "xlsx");
+			fileName = getFileName("U", ".xls");
+			monthAndFileName = getMonthAndFileName("U", ".xls");
 			file = new File(storedPath + fileName);
 		}
 		
@@ -478,10 +478,12 @@ public class UpdownServiceImpl implements UpdownService {
             if(fileName.endsWith(".xlsx")) {
             	try (XSSFWorkbook workbook = new XSSFWorkbook(fileStream)) {
 					sheet = workbook.getSheet("수출자료");
+					log.info("xlsx 실행");				
 				}
             }else if (fileName.endsWith(".xls")) {
 				try (HSSFWorkbook workbook = new HSSFWorkbook(fileStream)) {
 					sheet = workbook.getSheet("수출자료");
+					log.info("xls 실행");		
 				}
 			}
             
